@@ -10,17 +10,6 @@ import (
 	"github.com/rodcorsi/ecalc/calc"
 )
 
-type ECalc struct {
-	Value       float64
-	Degree      bool
-	Error       error
-	Writer      io.Writer
-	EngNotation bool
-	Partial     bool
-	Expression  string
-	StackExpr   calc.Stack
-}
-
 var (
 	fmtPrompt = color.New(color.FgCyan)
 	fmtResult = color.New(color.FgYellow)
@@ -35,86 +24,117 @@ var (
 const minEngNotation = float64(0.00000001)
 const maxEngNotation = float64(9999999999999.0)
 
-var Ans float64
+var lastAnswer float64
 
 func init() {
 	calc.AddConstant("ans", func() float64 {
-		return Ans
+		return lastAnswer
 	})
 }
 
-func NewECalc(writer io.Writer) *ECalc {
-	return &ECalc{
-		Writer: writer,
-	}
+type Result struct {
+	Value       float64
+	Degree      bool
+	Error       error
+	Writer      io.Writer
+	EngNotation bool
+	Partial     bool
+	Expression  string
+	StackExpr   calc.Stack
 }
 
-func (e *ECalc) PrintResult() {
-	//Print Stack
+type ECalc struct {
+	Result *Result
+}
+
+func NewECalc() *ECalc {
+	ecalc := &ECalc{}
+	ecalc.Eval("0")
+	return ecalc
+}
+
+func (e *ECalc) Eval(expr string) *Result {
+	c := &Result{
+		Expression: expr,
+		Degree:     re.MatchString(expr),
+	}
+	e.Result = c
+
+	stack, err := calc.ParseExpression(expr)
+	if err != nil {
+		c.Error = err
+		return c
+	}
+
+	stack, c.Partial = addANS(stack)
+	c.StackExpr = stack
+
+	c.Value, c.Error = calc.SolveStack(stack)
+
+	if c.Error == nil {
+		lastAnswer = c.Value
+	}
+
+	if c.Value == 0 {
+		c.EngNotation = false
+		return c
+	}
+	v := math.Abs(c.Value)
+	c.EngNotation = (v > maxEngNotation || v < minEngNotation)
+
+	return c
+}
+
+func (e *ECalc) AddConstant(name string, value float64) {
+	calc.AddConstant(name, func() float64 {
+		return value
+	})
+}
+
+func (c *Result) FormatValue() string {
+	if c.EngNotation {
+		return fmtPrompt.Sprintf("%e", c.Value)
+	}
+	return fmtPrompt.Sprintf("%14.8f", c.Value)
+}
+
+func (e *Result) FormatExpression() string {
+	result := ""
 	lastType := calc.TokenType(-1)
 
 	for _, v := range e.StackExpr.Values {
 		closeParen := false
 		if lastType == calc.FUNCTION && (v.Type == calc.NUMBER || v.Type == calc.CONSTANT) {
-			e.Print("(")
+			result += "("
 			closeParen = true
 		}
 
 		if v.Type == calc.FUNCTION || v.Type == calc.CONSTANT {
 			fmtFunction.Print(v.Value)
 		} else if v.Type == calc.NUMBER {
-			fmt.Print(v.Value)
+			result += v.Value
 		} else if v.Value == "+" || v.Value == "-" {
-			e.Print(" " + v.Value + " ")
+			result += " " + v.Value + " "
 		} else {
-			e.Print(v.Value)
+			result += v.Value
 		}
 		if closeParen {
-			e.Print(")")
+			result += ")"
 		}
 		lastType = v.Type
 	}
+	return result
+}
 
-	e.Print(" = ")
-
-	if e.Error != nil {
-		//fmtError.Fprintln(e.Writer, "Error:", e.Error.Error())
-		fmtError.Println("Error:", e.Error.Error())
-	} else if e.Degree {
-		//fmtResult.Fprintln(e.Writer, convertDMS(e.Value))
-		fmtResult.Println(convertDMS(e.Value))
-	} else if e.EngNotation {
-		//fmtResult.Fprintf(e.Writer, "%e\n", e.Value)
-		fmtResult.Printf("%e\n", e.Value)
-	} else {
-		//fmtResult.Fprintf(e.Writer, "%.12f\n", e.Value)
-		fmtResult.Printf("%.12f\n", e.Value)
+func (c *Result) FormatResult() string {
+	if c.Error != nil {
+		return fmtError.Sprint("Error:", c.Error.Error())
+	} else if c.Degree {
+		return fmtResult.Sprintln(convertDMS(c.Value))
+	} else if c.EngNotation {
+		return fmtResult.Sprintf("%e\n", c.Value)
 	}
-}
-
-func (e *ECalc) PrintPrompt() {
-	e.Print("(ans:")
-	if e.EngNotation {
-		//fmtPrompt.Fprintf(e.Writer, "%e", e.Value)
-		fmtPrompt.Printf("%e", e.Value)
-	} else {
-		//fmtPrompt.Fprintf(e.Writer, "%14.8f", e.Value)
-		fmtPrompt.Printf("%14.8f", e.Value)
-	}
-
-	e.Print(") » ")
-}
-
-func (e *ECalc) Print(a ...interface{}) {
-	fmt.Fprint(e.Writer, a...)
-}
-
-func (e *ECalc) Println(a ...interface{}) {
-	fmt.Fprintln(e.Writer, a...)
-}
-
-func (e *ECalc) Printf(format string, a ...interface{}) {
-	fmt.Fprintf(e.Writer, format, a...)
+	return fmtResult.Sprintf("%.12f\n", c.Value)
 }
 
 func convertDMS(value float64) string {
@@ -122,39 +142,6 @@ func convertDMS(value float64) string {
 	m := (value - float64(d)) * 60.0
 	s := (m - float64(int64(m))) * 60.0
 	return fmt.Sprintf(`%vd%2d'%.5f"`, d, int64(m), s)
-}
-
-func (e *ECalc) Eval(expr string) {
-	e.Expression = expr
-	e.Degree = re.MatchString(expr)
-
-	stack, err := calc.ParseExpression(expr)
-	if err != nil {
-		e.Error = err
-		return
-	}
-
-	stack, e.Partial = addANS(stack)
-	e.StackExpr = stack
-
-	e.Value, e.Error = calc.SolveStack(stack)
-
-	if e.Error == nil {
-		Ans = e.Value
-	}
-
-	if e.Value == 0 {
-		e.EngNotation = false
-		return
-	}
-	v := math.Abs(e.Value)
-	e.EngNotation = (v > maxEngNotation || v < minEngNotation)
-}
-
-func (e *ECalc) AddConstant(name string, value float64) {
-	calc.AddConstant(name, func() float64 {
-		return value
-	})
 }
 
 func addANS(stack calc.Stack) (calc.Stack, bool) {
@@ -166,11 +153,11 @@ func addANS(stack calc.Stack) (calc.Stack, bool) {
 
 	if stack.Values[0].Type == calc.OPERATOR {
 		// first token is an operator add ans constant first
-		stack.Values = append([]calc.Token{calc.Token{calc.CONSTANT, "ans"}}, stack.Values...)
+		stack.Values = append([]calc.Token{calc.Token{Type: calc.CONSTANT, Value: "ans"}}, stack.Values...)
 		added = true
 	} else if v := stack.Values[len(stack.Values)-1]; v.Type == calc.FUNCTION || v.Type == calc.OPERATOR {
 		// last token is an operator or function add ans constant in the last position
-		stack.Push(calc.Token{calc.CONSTANT, "ans"})
+		stack.Push(calc.Token{Type: calc.CONSTANT, Value: "ans"})
 		added = true
 	}
 

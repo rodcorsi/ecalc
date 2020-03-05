@@ -1,19 +1,13 @@
 package main
 
-import "os"
-import "regexp"
-import "strings"
+import (
+	"regexp"
+	"strings"
 
-const version = "v0.3"
+	"github.com/abiosoft/ishell"
+)
 
-var cmds = map[string]func(*ECalc, string){
-	"exit":  exit,
-	"help":  help,
-	"dms":   dms,
-	"clear": clear,
-	"cls":   clear,
-	"set":   set,
-}
+const version = "v0.4"
 
 const hello = "Ecalc (" + version + `) - Engineer command calculator
 type 'help' for more informations or 'exit' to leave
@@ -33,6 +27,7 @@ Commands:
 	dms		print last result to Degree Minutes Seconds
 	clear	clear all screen
 	cls		same as clear command
+	set		define variable with last value
 Operator:
 	+ - * / ^
 Functions:
@@ -40,40 +35,49 @@ Functions:
 Constants:
 	e pi phi sqrt2 sqrte sqrtpi sqrtphi ans
 ANS:
-	you can use an special constant 'ans' to put last result in your expression
+	you can use an special constant 'ans' to use the last result on your expression
 `
 
-func exit(e *ECalc, args string) {
-	e.Println("Bye!")
-	os.Exit(0)
-}
+var reSet = regexp.MustCompile(`^[a-zA-Z]+$`)
 
-func help(e *ECalc, args string) {
-	e.Println(helpText)
-}
-
-func dms(e *ECalc, args string) {
-	e.Degree = true
-	e.PrintResult()
-}
-
-func clear(e *ECalc, args string) {
-	for i := 0; i < 30; i++ {
-		e.Println()
-	}
-}
-
-var reSet = regexp.MustCompile(`[a-zA-Z]+`)
-
-func set(e *ECalc, args string) {
-	varName := strings.TrimSpace(strings.ToLower(args))
-	if varName == "" {
-		varName = "x"
-	} else if !reSet.MatchString(varName) {
-		e.Printf("Invalid variable name '%v'. Must be just letters\n", args)
-		return
-	}
-
-	e.AddConstant(varName, e.Value)
-	e.Printf("%v => %.12f\n", varName, e.Value)
+func AddCommands(shell *ishell.Shell, ecalc *ECalc) {
+	shell.AddCmd(&ishell.Cmd{
+		Name: "help",
+		Help: "Help",
+		Func: func(c *ishell.Context) {
+			c.Println(helpText)
+		},
+	})
+	shell.AddCmd(&ishell.Cmd{
+		Name: "cls",
+		Help: "clear screen",
+		Func: func(c *ishell.Context) {
+			c.ClearScreen()
+		},
+	})
+	shell.AddCmd(&ishell.Cmd{
+		Name: "dms",
+		Help: "print last result to Degree Minutes Seconds",
+		Func: func(c *ishell.Context) {
+			ecalc.Result.Degree = true
+			c.Println(ResultLine(ecalc.Result))
+		},
+	})
+	shell.AddCmd(&ishell.Cmd{
+		Name: "set",
+		Help: "define variable with last value",
+		Func: func(c *ishell.Context) {
+			expr := strings.Join(c.Args, " ")
+			varName := strings.TrimSpace(expr)
+			if varName == "" {
+				varName = "x"
+			} else if !reSet.MatchString(varName) {
+				c.Printf("Invalid variable name '%v'. Must be just letters\n", expr)
+				return
+			}
+			value := ecalc.Result.Value
+			ecalc.AddConstant(varName, value)
+			c.Printf("%v => %v\n", varName, ecalc.Result.FormatResult())
+		},
+	})
 }
