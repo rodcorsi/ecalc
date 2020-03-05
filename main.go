@@ -42,6 +42,7 @@ func main() {
 		os.Exit(0)
 	})
 	shell.IgnoreCase(true)
+	shell.SetHomeHistoryPath(".ecalc_history")
 	shell.Run()
 }
 
