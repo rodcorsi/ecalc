@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"math"
 	"regexp"
 
@@ -30,17 +28,6 @@ func init() {
 	calc.AddConstant("ans", func() float64 {
 		return lastAnswer
 	})
-}
-
-type Result struct {
-	Value       float64
-	Degree      bool
-	Error       error
-	Writer      io.Writer
-	EngNotation bool
-	Partial     bool
-	Expression  string
-	StackExpr   calc.Stack
 }
 
 type ECalc struct {
@@ -89,59 +76,6 @@ func (e *ECalc) AddConstant(name string, value float64) {
 	calc.AddConstant(name, func() float64 {
 		return value
 	})
-}
-
-func (c *Result) FormatValue() string {
-	if c.EngNotation {
-		return fmtPrompt.Sprintf("%e", c.Value)
-	}
-	return fmtPrompt.Sprintf("%14.8f", c.Value)
-}
-
-func (e *Result) FormatExpression() string {
-	result := ""
-	lastType := calc.TokenType(-1)
-
-	for _, v := range e.StackExpr.Values {
-		closeParen := false
-		if lastType == calc.FUNCTION && (v.Type == calc.NUMBER || v.Type == calc.CONSTANT) {
-			result += "("
-			closeParen = true
-		}
-
-		if v.Type == calc.FUNCTION || v.Type == calc.CONSTANT {
-			fmtFunction.Print(v.Value)
-		} else if v.Type == calc.NUMBER {
-			result += v.Value
-		} else if v.Value == "+" || v.Value == "-" {
-			result += " " + v.Value + " "
-		} else {
-			result += v.Value
-		}
-		if closeParen {
-			result += ")"
-		}
-		lastType = v.Type
-	}
-	return result
-}
-
-func (c *Result) FormatResult() string {
-	if c.Error != nil {
-		return fmtError.Sprint("Error:", c.Error.Error())
-	} else if c.Degree {
-		return fmtResult.Sprintln(convertDMS(c.Value))
-	} else if c.EngNotation {
-		return fmtResult.Sprintf("%e\n", c.Value)
-	}
-	return fmtResult.Sprintf("%.12f\n", c.Value)
-}
-
-func convertDMS(value float64) string {
-	d := int64(value)
-	m := (value - float64(d)) * 60.0
-	s := (m - float64(int64(m))) * 60.0
-	return fmt.Sprintf(`%vd%2d'%.5f"`, d, int64(m), s)
 }
 
 func addANS(stack calc.Stack) (calc.Stack, bool) {

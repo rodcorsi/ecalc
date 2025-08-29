@@ -53,5 +53,5 @@ func Prompt(result *Result) string {
 func ResultLine(result *Result) string {
 	expr := result.FormatExpression()
 	value := result.FormatResult()
-	return fmt.Sprintf("%v = %v", expr, value)
+	return fmt.Sprintf("%v = %v\n", expr, value)
 }
