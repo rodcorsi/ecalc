@@ -3,7 +3,7 @@ package calc
 import (
 	"errors"
 	"math"
-	"strconv"
+	"math/big"
 	"strings"
 	"unicode"
 )
@@ -13,39 +13,39 @@ var errInvalidExpression = errors.New("Invalid Expression")
 var oprData = map[string]struct {
 	prec  int
 	rAsoc bool // true = right // false = left
-	fx    func(x, y float64) float64
+	fx    func(x, y *big.Float) *big.Float
 }{
-	"^": {4, true, func(x, y float64) float64 { return math.Pow(x, y) }},
-	"*": {3, false, func(x, y float64) float64 { return x * y }},
-	"/": {3, false, func(x, y float64) float64 { return x / y }},
-	"+": {2, false, func(x, y float64) float64 { return x + y }},
-	"-": {2, false, func(x, y float64) float64 { return x - y }},
+	"^": {4, true, func(x, y *big.Float) *big.Float { return bigPow(x, y) }},
+	"*": {3, false, func(x, y *big.Float) *big.Float { z := new(big.Float); return z.Mul(x, y) }},
+	"/": {3, false, func(x, y *big.Float) *big.Float { z := new(big.Float); return z.Quo(x, y) }},
+	"+": {2, false, func(x, y *big.Float) *big.Float { z := new(big.Float); return z.Add(x, y) }},
+	"-": {2, false, func(x, y *big.Float) *big.Float { z := new(big.Float); return z.Sub(x, y) }},
 }
 
 var funcs = map[string]Function{
-	"ln":    math.Log,
-	"abs":   math.Abs,
+	"ln":    bigLog,
+	"abs":   bigAbs,
 	"cos":   cos,
 	"sin":   sin,
 	"tan":   tan,
 	"acos":  acos,
 	"asin":  asin,
 	"atan":  atan,
-	"sqrt":  math.Sqrt,
-	"cbrt":  math.Cbrt,
-	"ceil":  math.Ceil,
-	"floor": math.Floor,
+	"sqrt":  bigSqrt,
+	"cbrt":  bigCbrt,
+	"ceil":  bigCeil,
+	"floor": bigFloor,
 }
 
 var consts = map[string]ConstFunction{
-	"e":       func() float64 { return math.E },
-	"pi":      func() float64 { return math.Pi },
-	"phi":     func() float64 { return math.Phi },
-	"sqrt2":   func() float64 { return math.Sqrt2 },
-	"sqrte":   func() float64 { return math.SqrtE },
-	"sqrtpi":  func() float64 { return math.SqrtPi },
-	"sqrtphi": func() float64 { return math.SqrtPhi },
-	"pol":     func() float64 { return 25.4 },
+	"e":       func() *big.Float { return big.NewFloat(math.E) },
+	"pi":      func() *big.Float { return big.NewFloat(math.Pi) },
+	"phi":     func() *big.Float { return big.NewFloat(math.Phi) },
+	"sqrt2":   func() *big.Float { return big.NewFloat(math.Sqrt2) },
+	"sqrte":   func() *big.Float { return big.NewFloat(math.SqrtE) },
+	"sqrtpi":  func() *big.Float { return big.NewFloat(math.SqrtPi) },
+	"sqrtphi": func() *big.Float { return big.NewFloat(math.SqrtPhi) },
+	"pol":     func() *big.Float { return big.NewFloat(25.4) },
 }
 
 var elemNames map[string]TokenType
@@ -62,7 +62,7 @@ func init() {
 }
 
 // SolvePostfix evaluates and returns the answer of the expression converted to postfix
-func SolvePostfix(tokens Stack) (float64, error) {
+func SolvePostfix(tokens Stack) (*big.Float, error) {
 	stack := Stack{}
 	funcStack := Stack{}
 
@@ -72,12 +72,15 @@ func SolvePostfix(tokens Stack) (float64, error) {
 			if funcStack.IsEmpty() {
 				stack.Push(v)
 			} else {
-				x, _ := strconv.ParseFloat(v.Value, 64)
+				x, _, err := big.ParseFloat(v.Value, 10, 256, big.ToNearestEven)
+				if err != nil {
+					return nil, err
+				}
 				for !funcStack.IsEmpty() {
 					f := funcs[funcStack.Pop().Value]
 					x = f(x)
 				}
-				stack.Push(Token{NUMBER, strconv.FormatFloat(x, 'f', -1, 64)})
+				stack.Push(Token{NUMBER, x.Text('f', -1)})
 			}
 		case FUNCTION:
 			funcStack.Push(v)
@@ -89,28 +92,37 @@ func SolvePostfix(tokens Stack) (float64, error) {
 			x := c()
 
 			if funcStack.IsEmpty() {
-				stack.Push(Token{NUMBER, strconv.FormatFloat(x, 'f', -1, 64)})
+				stack.Push(Token{NUMBER, x.Text('f', -1)})
 			} else {
 				for !funcStack.IsEmpty() {
 					f := funcs[funcStack.Pop().Value]
 					x = f(x)
 				}
-				stack.Push(Token{NUMBER, strconv.FormatFloat(x, 'f', -1, 64)})
+				stack.Push(Token{NUMBER, x.Text('f', -1)})
 			}
 
 		case OPERATOR:
 			f := oprData[v.Value].fx
-			var x, y float64
-			y, _ = strconv.ParseFloat(stack.Pop().Value, 64)
-			x, _ = strconv.ParseFloat(stack.Pop().Value, 64)
-			result := f(x, y)
-			stack.Push(Token{NUMBER, strconv.FormatFloat(result, 'f', -1, 64)})
+
+			yVal, _, err := big.ParseFloat(stack.Pop().Value, 10, 256, big.ToNearestEven)
+			if err != nil {
+				return nil, err
+			}
+
+			xVal, _, err := big.ParseFloat(stack.Pop().Value, 10, 256, big.ToNearestEven)
+			if err != nil {
+				return nil, err
+			}
+
+			result := f(xVal, yVal)
+			stack.Push(Token{NUMBER, result.Text('f', -1)})
 		}
 	}
 	if len(stack.Values) != 1 {
-		return -1, errInvalidExpression
+		return nil, errInvalidExpression
 	}
-	return strconv.ParseFloat(stack.Values[0].Value, 64)
+	result, _, err := big.ParseFloat(stack.Values[0].Value, 10, 256, big.ToNearestEven)
+	return result, err
 }
 
 func addMissingOperator(stack Stack) Stack {
@@ -143,10 +155,10 @@ func ContainsLetter(s string) bool {
 	return false
 }
 
-func Solve(s string) (float64, error) {
+func Solve(s string) (*big.Float, error) {
 	stack, err := ParseExpression(s)
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	return SolveStack(stack)
@@ -168,13 +180,13 @@ func ParseExpression(s string) (Stack, error) {
 	return stack, nil
 }
 
-func SolveStack(stack Stack) (float64, error) {
+func SolveStack(stack Stack) (*big.Float, error) {
 	stack = ShuntingYard(stack)
 
 	result, err := SolvePostfix(stack)
 
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	return result, nil

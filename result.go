@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 	"io"
-	"strconv"
+	"math/big"
 	"strings"
 
 	"github.com/rodcorsi/ecalc/calc"
 )
 
 type Result struct {
-	Value       float64
+	Value       *big.Float
 	Degree      bool
 	Error       error
 	Writer      io.Writer
@@ -22,9 +22,9 @@ type Result struct {
 
 func (c *Result) FormatValue() string {
 	if c.EngNotation {
-		return fmtPrompt.Sprintf("%e", c.Value)
+		return fmtPrompt.Sprint(c.Value.Text('e', 14))
 	}
-	return fmtPrompt.Sprintf("%14.8f", c.Value)
+	return fmtPrompt.Sprint(c.Value.Text('f', 8))
 }
 
 func (e *Result) FormatExpression() string {
@@ -66,25 +66,26 @@ func (c *Result) FormatResult() string {
 	return fmtResult.Sprintf("%s", formatRecurring(c.Value, 20))
 }
 
-func convertDMS(value float64) string {
-	d := int64(value)
-	m := (value - float64(d)) * 60.0
+func convertDMS(value *big.Float) string {
+	v, _ := value.Float64()
+	d := int64(v)
+	m := (v - float64(d)) * 60.0
 	s := (m - float64(int64(m))) * 60.0
 	return fmt.Sprintf(`%vd%2d'%.5f"`, d, int64(m), s)
 }
 
-func formatRecurring(n float64, precision int) string {
-	if n == 0 {
+func formatRecurring(n *big.Float, precision int) string {
+	if n.Cmp(big.NewFloat(0)) == 0 {
 		return "0"
 	}
 
 	var sign string
-	if n < 0 {
+	if n.Sign() < 0 {
 		sign = "-"
-		n = -n
+		n.Abs(n)
 	}
 
-	s := strconv.FormatFloat(n, 'f', precision, 64)
+	s := n.Text('f', precision)
 	parts := strings.Split(s, ".")
 	integerPart := parts[0]
 	fractionalPartStr := parts[1]
@@ -102,7 +103,7 @@ func formatRecurring(n float64, precision int) string {
 		}
 	}
 
-	result := strconv.FormatFloat(n, 'f', -1, 64)
+	result := n.Text('f', -1)
 	if strings.Contains(result, ".") {
 		result = strings.TrimRight(result, "0")
 		result = strings.TrimRight(result, ".")

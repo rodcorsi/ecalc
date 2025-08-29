@@ -1,23 +1,24 @@
 package main
 
 import (
+	"math/big"
 	"testing"
 )
 
 func TestFormatRecurring(t *testing.T) {
 	tests := []struct {
 		name      string
-		n         float64
+		n         *big.Float
 		precision int
 		want      string
 	}{
-		{"1/3", 1.0 / 3.0, 10, "0.̅3"},
-		{"1/6", 1.0 / 6.0, 10, "0.1̅6"},
-		{"1/7", 1.0 / 7.0, 14, "0.̅1̅4̅2̅8̅5̅7"},
-		{"22/7", 22.0 / 7.0, 14, "3.̅1̅4̅2̅8̅5̅7"},
-		{"1/2", 1.0 / 2.0, 10, "0.5"},
-		{"-1/3", -1.0 / 3.0, 10, "-0.̅3"},
-		{"0", 0, 10, "0"},
+		{"1/3", new(big.Float).Quo(big.NewFloat(1.0), big.NewFloat(3.0)), 10, "0.̅3"},
+		{"1/6", new(big.Float).Quo(big.NewFloat(1.0), big.NewFloat(6.0)), 10, "0.1̅6"},
+		{"1/7", new(big.Float).Quo(big.NewFloat(1.0), big.NewFloat(7.0)), 14, "0.̅1̅4̅2̅8̅5̅7"},
+		{"22/7", new(big.Float).Quo(big.NewFloat(22.0), big.NewFloat(7.0)), 14, "3.̅1̅4̅2̅8̅5̅7"},
+		{"1/2", new(big.Float).Quo(big.NewFloat(1.0), big.NewFloat(2.0)), 10, "0.5"},
+		{"-1/3", new(big.Float).Quo(big.NewFloat(-1.0), big.NewFloat(3.0)), 10, "-0.̅3"},
+		{"0", big.NewFloat(0), 10, "0"},
 	}
 
 	for _, tt := range tests {

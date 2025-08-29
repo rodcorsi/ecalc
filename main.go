@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/abiosoft/ishell"
@@ -29,7 +28,7 @@ func main() {
 			if clipboard.Unsupported {
 				os.Exit(0)
 			} else {
-				value := strconv.FormatFloat(ecalc.Result.Value, 'f', -1, 64)
+				value := ecalc.Result.Value.Text('f', -1)
 				err := clipboard.WriteAll(value)
 				if err != nil {
 					c.Println("\nCan't copy to clipboard! Terminating...")

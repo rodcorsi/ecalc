@@ -1,7 +1,7 @@
 package main
 
 import (
-	"math"
+	"math/big"
 	"regexp"
 
 	"github.com/fatih/color"
@@ -19,13 +19,13 @@ var (
 	re = regexp.MustCompile(`d|'|"|atan|acos|asin`)
 )
 
-const minEngNotation = float64(0.00000001)
-const maxEngNotation = float64(9999999999999.0)
+var minEngNotation = big.NewFloat(0.00000001)
+var maxEngNotation = big.NewFloat(9999999999999.0)
 
-var lastAnswer float64
+var lastAnswer = new(big.Float)
 
 func init() {
-	calc.AddConstant("ans", func() float64 {
+	calc.AddConstant("ans", func() *big.Float {
 		return lastAnswer
 	})
 }
@@ -62,18 +62,18 @@ func (e *ECalc) Eval(expr string) *Result {
 		lastAnswer = c.Value
 	}
 
-	if c.Value == 0 {
+	if c.Value.Cmp(big.NewFloat(0)) == 0 {
 		c.EngNotation = false
 		return c
 	}
-	v := math.Abs(c.Value)
-	c.EngNotation = (v > maxEngNotation || v < minEngNotation)
+	v := new(big.Float).Abs(c.Value)
+	c.EngNotation = (v.Cmp(maxEngNotation) > 0 || v.Cmp(minEngNotation) < 0)
 
 	return c
 }
 
-func (e *ECalc) AddConstant(name string, value float64) {
-	calc.AddConstant(name, func() float64 {
+func (e *ECalc) AddConstant(name string, value *big.Float) {
+	calc.AddConstant(name, func() *big.Float {
 		return value
 	})
 }
