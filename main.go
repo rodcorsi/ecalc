@@ -28,8 +28,7 @@ func main() {
 			if clipboard.Unsupported {
 				os.Exit(0)
 			} else {
-				value := ecalc.Result.Value.Text('f', -1)
-				err := clipboard.WriteAll(value)
+				value, err := copyToClipboard(c, ecalc)
 				if err != nil {
 					c.Println("\nCan't copy to clipboard! Terminating...")
 					os.Exit(1)
@@ -53,4 +52,9 @@ func ResultLine(result *Result) string {
 	expr := result.FormatExpression()
 	value := result.FormatResult()
 	return fmt.Sprintf("%v = %v\n", expr, value)
+}
+
+func copyToClipboard(c *ishell.Context, ecalc *ECalc) (string, error) {
+	value := ecalc.Result.Value.Text('f', -1)
+	return value, clipboard.WriteAll(value)
 }

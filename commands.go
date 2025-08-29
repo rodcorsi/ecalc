@@ -14,28 +14,31 @@ type 'help' for more informations or 'exit' to leave
 `
 
 const helpText = `Ecalc - Engineer command calculator
-Expressions:
-	5+2
-	15*pi
-	tan45
-	(4+5)*cos45d25'33.15"
+Expressions example:
+    5+2
+    15*pi
+    tan45
+    (4+5)*cos45d25'33.15"
+    *2
+	/3
 CTRL+C:
-	Copy result to clipboard
+    Copy result to clipboard
 Commands:
-	exit	terminate this
-	help	show this text
-	dms		print last result to Degree Minutes Seconds
-	clear	clear all screen
-	cls		same as clear command
-	set		define variable with last value
+    exit  terminate this
+    help  show this text
+    dms   print last result to Degree Minutes Seconds
+    clear clear all screen
+    cls   same as clear command
+    set   define variable with last value
+    cp    copy to clipboard
 Operator:
-	+ - * / ^
+    + - * / ^
 Functions:
-	ln abs cos sin tan acos asin atan sqrt cbrt ceil floor
+    ln abs cos sin tan acos asin atan sqrt cbrt ceil floor
 Constants:
-	e pi phi sqrt2 sqrte sqrtpi sqrtphi ans
+    e pi phi sqrt2 sqrte sqrtpi sqrtphi ans
 ANS:
-	you can use an special constant 'ans' to use the last result on your expression
+    you can use an special variable 'ans' to use the last result on your expression
 `
 
 var reSet = regexp.MustCompile(`^[a-zA-Z]+$`)
@@ -78,6 +81,18 @@ func AddCommands(shell *ishell.Shell, ecalc *ECalc) {
 			value := ecalc.Result.Value
 			ecalc.AddConstant(varName, value)
 			c.Printf("%v => %v\n", varName, ecalc.Result.FormatResult())
+		},
+	})
+	shell.AddCmd(&ishell.Cmd{
+		Name: "cp",
+		Help: "Copy to clipboard",
+		Func: func(c *ishell.Context) {
+			value, err := copyToClipboard(c, ecalc)
+			if err != nil {
+				c.Println("\nCan't copy to clipboard! ")
+				return
+			}
+			c.Printf("\n'%v' copied to clipboard!\n", value)
 		},
 	})
 }

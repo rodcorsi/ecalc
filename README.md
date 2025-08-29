@@ -9,6 +9,8 @@ Accept expression without parentheses and using DMS notation
   15*pi
   5tan45
   (4+5)*cos45d25'33.15"
+  *2
+  /3
 ```
 
 ## CTRL+C
@@ -17,9 +19,13 @@ Copy result to clipboard
 
 ## Commands
 
-`exit` terminate this
-
-`help` show this text
+`exit`  terminate this
+`help`  show this text
+`dms`   print last result to Degree Minutes Seconds
+`clear` clear all screen
+`cls`   same as clear command
+`set`   define variable with last value
+`cp`    copy to clipboard
 
 ## Operator
 
