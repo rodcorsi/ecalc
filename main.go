@@ -18,7 +18,7 @@ func main() {
 	shell.NotFound(func(c *ishell.Context) {
 		result := ecalc.Eval(strings.Join(c.Args, " "))
 		c.Println(ResultLine(result))
-		c.SetPrompt(Prompt(result))
+		c.SetPrompt(Prompt(lastAnswer))
 	})
 
 	shell.SetPrompt(Prompt(ecalc.Result))
@@ -51,7 +51,7 @@ func Prompt(result *Result) string {
 func ResultLine(result *Result) string {
 	expr := result.FormatExpression()
 	value := result.FormatResult()
-	return fmt.Sprintf("%v = %v\n", expr, value)
+	return fmt.Sprintf("%v = %v", expr, value)
 }
 
 func copyToClipboard(c *ishell.Context, ecalc *ECalc) (string, error) {

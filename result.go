@@ -59,7 +59,7 @@ func (c *Result) FormatResult() string {
 	if c.Error != nil {
 		return fmtError.Sprint("Error:", c.Error.Error())
 	} else if c.Degree {
-		return fmtResult.Sprintln(convertDMS(c.Value))
+		return fmtResult.Sprint(convertDMS(c.Value))
 	} else if c.EngNotation {
 		return fmtResult.Sprintf("%e", c.Value)
 	}

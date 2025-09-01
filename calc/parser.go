@@ -50,15 +50,6 @@ func (p *Parser) Parse() (Stack, error) {
 			return Stack{}, fmt.Errorf("ERROR: %q", tok.Value)
 		} else if tok.Type == EOF {
 			break
-		} else if tok.Type == OPERATOR && tok.Value == "-" {
-			lastTok := stack.Peek()
-			nextTok := p.ScanIgnoreWhitespace()
-			if (lastTok.Type == OPERATOR || lastTok.Value == "" || lastTok.Type == LPAREN) && nextTok.Type == NUMBER {
-				stack.Push(Token{NUMBER, "-" + nextTok.Value})
-			} else {
-				stack.Push(tok)
-				p.Unscan()
-			}
 		} else {
 			stack.Push(tok)
 		}

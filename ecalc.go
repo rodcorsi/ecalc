@@ -22,11 +22,11 @@ var (
 var minEngNotation = big.NewFloat(0.00000001)
 var maxEngNotation = big.NewFloat(9999999999999.0)
 
-var lastAnswer = new(big.Float)
+var lastAnswer = &Result{Value: new(big.Float)}
 
 func init() {
 	calc.AddConstant("ans", func() *big.Float {
-		return lastAnswer
+		return lastAnswer.Value
 	})
 }
 
@@ -58,9 +58,10 @@ func (e *ECalc) Eval(expr string) *Result {
 
 	c.Value, c.Error = calc.SolveStack(stack)
 
-	if c.Error == nil {
-		lastAnswer = c.Value
+	if c.Error != nil {
+		return c
 	}
+	lastAnswer = c
 
 	if c.Value.Cmp(big.NewFloat(0)) == 0 {
 		c.EngNotation = false
