@@ -23,15 +23,15 @@ func main() {
 	shell := ishell.New()
 	ecalc := ecalc.NewECalc()
 
-	AddCommands(shell, ecalc)
+	addCommands(shell, ecalc)
 
 	shell.NotFound(func(c *ishell.Context) {
 		result := ecalc.Eval(strings.Join(c.Args, " "))
 		c.Println(resultLine(result))
-		c.SetPrompt(Prompt(ecalc.LastAnswer))
+		c.SetPrompt(prompt(ecalc.LastAnswer))
 	})
 
-	shell.SetPrompt(Prompt(ecalc.Result))
+	shell.SetPrompt(prompt(ecalc.Result))
 	shell.Println(hello)
 	shell.Interrupt(func(c *ishell.Context, count int, input string) {
 		if count == 1 {
@@ -54,7 +54,7 @@ func main() {
 	shell.Run()
 }
 
-func Prompt(result *ecalc.Result) string {
+func prompt(result *ecalc.Result) string {
 	return fmt.Sprintf("(ans:%v) » ", formatValue(result))
 }
 

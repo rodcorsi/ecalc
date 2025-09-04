@@ -42,9 +42,9 @@ ANS:
     you can use an special variable 'ans' to use the last result on your expression
 `
 
-var reSet = regexp.MustCompile(`^[a-zA-Z]+$`)
+var reValidSetName = regexp.MustCompile(`^[a-zA-Z]+$`)
 
-func AddCommands(shell *ishell.Shell, ecalc *ecalc.ECalc) {
+func addCommands(shell *ishell.Shell, ecalc *ecalc.ECalc) {
 	shell.AddCmd(&ishell.Cmd{
 		Name: "help",
 		Help: "Help",
@@ -75,7 +75,7 @@ func AddCommands(shell *ishell.Shell, ecalc *ecalc.ECalc) {
 			varName := strings.TrimSpace(expr)
 			if varName == "" {
 				varName = "x"
-			} else if !reSet.MatchString(varName) {
+			} else if !reValidSetName.MatchString(varName) {
 				c.Printf("Invalid variable name '%v'. Must be just letters\n", expr)
 				return
 			}
