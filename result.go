@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/rodcorsi/ecalc/calc"
+	"github.com/rodcorsi/ecalc/esolver"
 )
 
 type Result struct {
@@ -17,7 +17,7 @@ type Result struct {
 	EngNotation bool
 	Partial     bool
 	Expression  string
-	StackExpr   calc.Stack
+	StackExpr   esolver.Stack
 }
 
 func (c *Result) FormatValue() string {
@@ -29,18 +29,18 @@ func (c *Result) FormatValue() string {
 
 func (e *Result) FormatExpression() string {
 	result := ""
-	lastType := calc.TokenType(-1)
+	lastType := esolver.TokenType(-1)
 
 	for _, v := range e.StackExpr.Values {
 		closeParen := false
-		if lastType == calc.FUNCTION && (v.Type == calc.NUMBER || v.Type == calc.CONSTANT) {
+		if lastType == esolver.FUNCTION && (v.Type == esolver.NUMBER || v.Type == esolver.CONSTANT) {
 			result += "("
 			closeParen = true
 		}
 
-		if v.Type == calc.FUNCTION || v.Type == calc.CONSTANT {
+		if v.Type == esolver.FUNCTION || v.Type == esolver.CONSTANT {
 			fmtFunction.Print(v.Value)
-		} else if v.Type == calc.NUMBER {
+		} else if v.Type == esolver.NUMBER {
 			result += v.Value
 		} else if v.Value == "+" || v.Value == "-" {
 			result += " " + v.Value + " "

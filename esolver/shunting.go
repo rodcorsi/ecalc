@@ -1,4 +1,4 @@
-package calc
+package esolver
 
 func ShuntingYard(s Stack) Stack {
 	postfix := Stack{}

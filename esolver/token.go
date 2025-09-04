@@ -1,4 +1,4 @@
-package calc
+package esolver
 
 type TokenType int
 

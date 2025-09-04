@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/fatih/color"
-	"github.com/rodcorsi/ecalc/calc"
+	"github.com/rodcorsi/ecalc/esolver"
 )
 
 var (
@@ -14,9 +14,8 @@ var (
 	fmtError  = color.New(color.FgRed)
 
 	fmtFunction = color.New(color.FgYellow)
-	//fmtNumber   = color.New(color.FgRed)
 
-	re = regexp.MustCompile(`d|'|"|atan|acos|asin`)
+	reDegree = regexp.MustCompile(`d|'|"|atan|acos|asin`)
 )
 
 var minEngNotation = big.NewFloat(0.00000001)
@@ -25,7 +24,7 @@ var maxEngNotation = big.NewFloat(9999999999999.0)
 var lastAnswer = &Result{Value: new(big.Float)}
 
 func init() {
-	calc.AddConstant("ans", func() *big.Float {
+	esolver.AddConstant("ans", func() *big.Float {
 		return lastAnswer.Value
 	})
 }
@@ -43,11 +42,11 @@ func NewECalc() *ECalc {
 func (e *ECalc) Eval(expr string) *Result {
 	c := &Result{
 		Expression: expr,
-		Degree:     re.MatchString(expr),
+		Degree:     reDegree.MatchString(expr),
 	}
 	e.Result = c
 
-	stack, err := calc.ParseExpression(expr)
+	stack, err := esolver.ParseExpression(expr)
 	if err != nil {
 		c.Error = err
 		return c
@@ -56,7 +55,7 @@ func (e *ECalc) Eval(expr string) *Result {
 	stack, c.Partial = addANS(stack)
 	c.StackExpr = stack
 
-	c.Value, c.Error = calc.SolveStack(stack)
+	c.Value, c.Error = esolver.SolveStack(stack)
 
 	if c.Error != nil {
 		return c
@@ -74,25 +73,25 @@ func (e *ECalc) Eval(expr string) *Result {
 }
 
 func (e *ECalc) AddConstant(name string, value *big.Float) {
-	calc.AddConstant(name, func() *big.Float {
+	esolver.AddConstant(name, func() *big.Float {
 		return value
 	})
 }
 
-func addANS(stack calc.Stack) (calc.Stack, bool) {
+func addANS(stack esolver.Stack) (esolver.Stack, bool) {
 	if len(stack.Values) == 0 {
 		return stack, false
 	}
 
 	added := false
 
-	if stack.Values[0].Type == calc.OPERATOR {
+	if stack.Values[0].Type == esolver.OPERATOR {
 		// first token is an operator add ans constant first
-		stack.Values = append([]calc.Token{calc.Token{Type: calc.CONSTANT, Value: "ans"}}, stack.Values...)
+		stack.Values = append([]esolver.Token{esolver.Token{Type: esolver.CONSTANT, Value: "ans"}}, stack.Values...)
 		added = true
-	} else if v := stack.Values[len(stack.Values)-1]; v.Type == calc.FUNCTION || v.Type == calc.OPERATOR {
+	} else if v := stack.Values[len(stack.Values)-1]; v.Type == esolver.FUNCTION || v.Type == esolver.OPERATOR {
 		// last token is an operator or function add ans constant in the last position
-		stack.Push(calc.Token{Type: calc.CONSTANT, Value: "ans"})
+		stack.Push(esolver.Token{Type: esolver.CONSTANT, Value: "ans"})
 		added = true
 	}
 

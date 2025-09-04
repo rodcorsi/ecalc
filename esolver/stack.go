@@ -1,4 +1,4 @@
-package calc
+package esolver
 
 // Stack is a LIFO data structure
 type Stack struct {
