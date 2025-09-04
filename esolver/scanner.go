@@ -9,11 +9,15 @@ import (
 )
 
 type Scanner struct {
-	r *bufio.Reader
+	r         *bufio.Reader
+	elemNames map[string]TokenType
 }
 
-func NewScanner(r io.Reader) *Scanner {
-	return &Scanner{r: bufio.NewReader(r)}
+func NewScanner(r io.Reader, elemNames map[string]TokenType) *Scanner {
+	return &Scanner{
+		r:         bufio.NewReader(r),
+		elemNames: elemNames,
+	}
 }
 
 func (s *Scanner) Read() rune {
@@ -60,7 +64,7 @@ func (s *Scanner) ScanWord() Token {
 	buf.WriteRune(s.Read())
 	value := buf.String()
 
-	for v, tokenType := range elemNames {
+	for v, tokenType := range s.elemNames {
 		for {
 			if value == v {
 				return Token{tokenType, value}

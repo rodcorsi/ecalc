@@ -1,42 +1,31 @@
-package main
+package ecalc
 
 import (
 	"math/big"
 	"regexp"
 
-	"github.com/fatih/color"
 	"github.com/rodcorsi/ecalc/esolver"
 )
 
-var (
-	fmtPrompt = color.New(color.FgCyan)
-	fmtResult = color.New(color.FgYellow)
-	fmtError  = color.New(color.FgRed)
-
-	fmtFunction = color.New(color.FgYellow)
-
-	reDegree = regexp.MustCompile(`d|'|"|atan|acos|asin`)
-)
-
+var reDegree = regexp.MustCompile(`d|'|"|atan|acos|asin`)
 var minEngNotation = big.NewFloat(0.00000001)
 var maxEngNotation = big.NewFloat(9999999999999.0)
 
-var lastAnswer = &Result{Value: new(big.Float)}
-
-func init() {
-	esolver.AddConstant("ans", func() *big.Float {
-		return lastAnswer.Value
-	})
-}
-
 type ECalc struct {
-	Result *Result
+	solver     esolver.ESolver
+	Result     *Result
+	LastAnswer *Result
 }
 
 func NewECalc() *ECalc {
-	ecalc := &ECalc{}
-	ecalc.Eval("0")
-	return ecalc
+	e := &ECalc{
+		solver: esolver.New(),
+	}
+	e.solver.AddConstant("ans", func() *big.Float {
+		return e.LastAnswer.Value
+	})
+	e.Eval("0")
+	return e
 }
 
 func (e *ECalc) Eval(expr string) *Result {
@@ -46,7 +35,7 @@ func (e *ECalc) Eval(expr string) *Result {
 	}
 	e.Result = c
 
-	stack, err := esolver.ParseExpression(expr)
+	stack, err := e.solver.ParseExpression(expr)
 	if err != nil {
 		c.Error = err
 		return c
@@ -55,12 +44,12 @@ func (e *ECalc) Eval(expr string) *Result {
 	stack, c.Partial = addANS(stack)
 	c.StackExpr = stack
 
-	c.Value, c.Error = esolver.SolveStack(stack)
+	c.Value, c.Error = e.solver.SolveStack(stack)
 
 	if c.Error != nil {
 		return c
 	}
-	lastAnswer = c
+	e.LastAnswer = c
 
 	if c.Value.Cmp(big.NewFloat(0)) == 0 {
 		c.EngNotation = false
@@ -73,7 +62,7 @@ func (e *ECalc) Eval(expr string) *Result {
 }
 
 func (e *ECalc) AddConstant(name string, value *big.Float) {
-	esolver.AddConstant(name, func() *big.Float {
+	e.solver.AddConstant(name, func() *big.Float {
 		return value
 	})
 }

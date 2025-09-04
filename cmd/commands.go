@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/abiosoft/ishell"
+	"github.com/rodcorsi/ecalc"
 )
 
 const version = "v0.4"
@@ -43,7 +44,7 @@ ANS:
 
 var reSet = regexp.MustCompile(`^[a-zA-Z]+$`)
 
-func AddCommands(shell *ishell.Shell, ecalc *ECalc) {
+func AddCommands(shell *ishell.Shell, ecalc *ecalc.ECalc) {
 	shell.AddCmd(&ishell.Cmd{
 		Name: "help",
 		Help: "Help",
@@ -63,7 +64,7 @@ func AddCommands(shell *ishell.Shell, ecalc *ECalc) {
 		Help: "print last result to Degree Minutes Seconds",
 		Func: func(c *ishell.Context) {
 			ecalc.Result.Degree = true
-			c.Println(ResultLine(ecalc.Result))
+			c.Println(resultLine(ecalc.Result))
 		},
 	})
 	shell.AddCmd(&ishell.Cmd{
@@ -80,7 +81,7 @@ func AddCommands(shell *ishell.Shell, ecalc *ECalc) {
 			}
 			value := ecalc.Result.Value
 			ecalc.AddConstant(varName, value)
-			c.Printf("%v => %v\n", varName, ecalc.Result.FormatResult())
+			c.Printf("%v => %v\n", varName, formatResult(ecalc.Result))
 		},
 	})
 	shell.AddCmd(&ishell.Cmd{

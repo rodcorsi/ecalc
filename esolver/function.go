@@ -73,7 +73,7 @@ func degToDec(value string) *big.Float {
 	}
 	d, value = parse(value, "d")
 	m, value = parse(value, "'m")
-	s, value = parse(value, `"s`)
+	s, _ = parse(value, `"s`)
 
 	return dms(d, m, s)
 }

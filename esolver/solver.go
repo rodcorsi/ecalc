@@ -5,10 +5,9 @@ import (
 	"math"
 	"math/big"
 	"strings"
-	"unicode"
 )
 
-var errInvalidExpression = errors.New("Invalid Expression")
+var errInvalidExpression = errors.New("invalid expression")
 
 var oprData = map[string]struct {
 	prec  int
@@ -48,10 +47,20 @@ var consts = map[string]ConstFunction{
 	"pol":     func() *big.Float { return big.NewFloat(25.4) },
 }
 
-var elemNames map[string]TokenType
+type ESolver interface {
+	Solve(s string) (*big.Float, error)
+	SolveStack(stack Stack) (*big.Float, error)
+	SolvePostfix(tokens Stack) (*big.Float, error)
+	ParseExpression(s string) (Stack, error)
+	AddConstant(name string, constCreator ConstFunction)
+}
+type esolver struct {
+	elemNames  map[string]TokenType
+	userConsts map[string]ConstFunction
+}
 
-func init() {
-	elemNames = make(map[string]TokenType)
+func New() ESolver {
+	elemNames := make(map[string]TokenType)
 	for k := range funcs {
 		elemNames[k] = FUNCTION
 	}
@@ -59,10 +68,35 @@ func init() {
 	for k := range consts {
 		elemNames[k] = CONSTANT
 	}
+	return &esolver{
+		elemNames:  elemNames,
+		userConsts: make(map[string]ConstFunction),
+	}
+}
+
+func (e *esolver) Solve(s string) (*big.Float, error) {
+	stack, err := e.ParseExpression(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return e.SolveStack(stack)
+}
+
+func (e *esolver) SolveStack(stack Stack) (*big.Float, error) {
+	stack = ShuntingYard(stack)
+
+	result, err := e.SolvePostfix(stack)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // SolvePostfix evaluates and returns the answer of the expression converted to postfix
-func SolvePostfix(tokens Stack) (*big.Float, error) {
+func (e *esolver) SolvePostfix(tokens Stack) (*big.Float, error) {
 	stack := Stack{}
 	funcStack := Stack{}
 
@@ -85,7 +119,7 @@ func SolvePostfix(tokens Stack) (*big.Float, error) {
 		case FUNCTION:
 			funcStack.Push(v)
 		case CONSTANT:
-			c, ok := consts[v.Value]
+			c, ok := e.findConst(v.Value)
 			if !ok {
 				break
 			}
@@ -145,31 +179,12 @@ func addMissingOperator(stack Stack) Stack {
 	return fixed
 }
 
-// ContainsLetter checks if a string contains a letter
-func ContainsLetter(s string) bool {
-	for _, v := range s {
-		if unicode.IsLetter(v) {
-			return true
-		}
-	}
-	return false
-}
-
-func Solve(s string) (*big.Float, error) {
-	stack, err := ParseExpression(s)
-	if err != nil {
-		return nil, err
-	}
-
-	return SolveStack(stack)
-}
-
-func ParseExpression(s string) (Stack, error) {
+func (e *esolver) ParseExpression(s string) (Stack, error) {
 	s = strings.ToLower(s)
 	s = strings.TrimSpace(s)
 	s = strings.Replace(s, ",", ".", -1)
 
-	p := NewParser(strings.NewReader(s))
+	p := NewParser(strings.NewReader(s), e.elemNames)
 
 	stack, err := p.Parse()
 	if err != nil {
@@ -180,19 +195,15 @@ func ParseExpression(s string) (Stack, error) {
 	return stack, nil
 }
 
-func SolveStack(stack Stack) (*big.Float, error) {
-	stack = ShuntingYard(stack)
-
-	result, err := SolvePostfix(stack)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (e *esolver) AddConstant(name string, constCreator ConstFunction) {
+	e.userConsts[name] = constCreator
+	e.elemNames[name] = CONSTANT
 }
 
-func AddConstant(name string, constCreator ConstFunction) {
-	consts[name] = constCreator
-	elemNames[name] = CONSTANT
+func (e *esolver) findConst(name string) (c ConstFunction, ok bool) {
+	if c, ok = consts[name]; ok {
+		return c, ok
+	}
+	c, ok = e.userConsts[name]
+	return
 }

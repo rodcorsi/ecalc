@@ -13,8 +13,8 @@ type Parser struct {
 	}
 }
 
-func NewParser(r io.Reader) *Parser {
-	return &Parser{s: NewScanner(r)}
+func NewParser(r io.Reader, elemNames map[string]TokenType) *Parser {
+	return &Parser{s: NewScanner(r, elemNames)}
 }
 
 func (p *Parser) Scan() (tok Token) {

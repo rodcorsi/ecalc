@@ -1,4 +1,4 @@
-package main
+package ecalc
 
 import (
 	"math/big"

@@ -8,7 +8,7 @@ import (
 func TestSolve(t *testing.T) {
 	assert := func(value string, expected *big.Float, isError bool) {
 
-		x, err := Solve(value)
+		x, err := New().Solve(value)
 		if (err != nil) != isError {
 			t.Errorf("Expected error(%v) value:`%v` result:`%v` Error:%v", isError, value, x, err)
 			return

@@ -7,7 +7,7 @@ import (
 
 func TestScan(t *testing.T) {
 	assert := func(text, expected string) {
-		scanner := NewScanner(strings.NewReader(text))
+		scanner := NewScanner(strings.NewReader(text), nil)
 		expected = degToDecString(expected)
 		token := scanner.Scan()
 		if token.Type != NUMBER || token.Value != expected {

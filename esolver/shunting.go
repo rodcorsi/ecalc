@@ -9,8 +9,8 @@ func ShuntingYard(s Stack) Stack {
 			for !operators.IsEmpty() {
 				val := v.Value
 				top := operators.Peek().Value
-				if (oprData[val].prec <= oprData[top].prec && oprData[val].rAsoc == false) ||
-					(oprData[val].prec < oprData[top].prec && oprData[val].rAsoc == true) {
+				if (oprData[val].prec <= oprData[top].prec && !oprData[val].rAsoc) ||
+					(oprData[val].prec < oprData[top].prec && oprData[val].rAsoc) {
 					postfix.Push(operators.Pop())
 					continue
 				}

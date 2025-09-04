@@ -1,4 +1,4 @@
-package main
+package ecalc
 
 import (
 	"fmt"
@@ -20,52 +20,41 @@ type Result struct {
 	StackExpr   esolver.Stack
 }
 
-func (c *Result) FormatValue() string {
-	if c.EngNotation {
-		return fmtPrompt.Sprint(c.Value.Text('e', 14))
-	}
-	return fmtPrompt.Sprint(c.Value.Text('f', 8))
-}
-
-func (e *Result) FormatExpression() string {
-	result := ""
+func (e *Result) FormatExpression(printer func(value string, t esolver.Token)) {
 	lastType := esolver.TokenType(-1)
-
 	for _, v := range e.StackExpr.Values {
 		closeParen := false
 		if lastType == esolver.FUNCTION && (v.Type == esolver.NUMBER || v.Type == esolver.CONSTANT) {
-			result += "("
+			printer("(", v)
 			closeParen = true
 		}
 
 		if v.Type == esolver.FUNCTION || v.Type == esolver.CONSTANT {
-			fmtFunction.Print(v.Value)
+			printer(v.Value, v)
 		} else if v.Type == esolver.NUMBER {
-			result += v.Value
+			printer(v.Value, v)
 		} else if v.Value == "+" || v.Value == "-" {
-			result += " " + v.Value + " "
+			printer(" "+v.Value+" ", v)
 		} else {
-			result += v.Value
+			printer(v.Value, v)
 		}
 		if closeParen {
-			result += ")"
+			printer(")", v)
 		}
 		lastType = v.Type
 	}
-	return result
 }
 
-func (c *Result) FormatResult() string {
+func (c *Result) String() string {
 	if c.Error != nil {
-		return fmtError.Sprint("Error:", c.Error.Error())
+		return c.Error.Error()
 	} else if c.Degree {
-		return fmtResult.Sprint(convertDMS(c.Value))
+		return convertDMS(c.Value)
 	} else if c.EngNotation {
-		return fmtResult.Sprintf("%e", c.Value)
+		return fmt.Sprintf("%e", c.Value)
 	}
-	return fmtResult.Sprintf("%s", formatRecurring(c.Value, 20))
+	return formatRecurring(c.Value, 20)
 }
-
 func convertDMS(value *big.Float) string {
 	v, _ := value.Float64()
 	d := int64(v)
