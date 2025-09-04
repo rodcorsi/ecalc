@@ -19,7 +19,7 @@ Expressions example:
     5+2
     15*pi
     tan45
-    (4+5)*cos45d25'33.15"
+    (4+5)*cos45d25m33.15s
     *2
 	/3
 CTRL+C:
