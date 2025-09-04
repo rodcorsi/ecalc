@@ -75,16 +75,67 @@ func formatRecurring(n *big.Float, precision int) string {
 	}
 
 	s := n.Text('f', precision)
+
+	if strings.Contains(s, ".") {
+		parts := strings.Split(s, ".")
+		trimmedFractional := strings.TrimRight(parts[1], "0")
+
+		isAllNines := len(trimmedFractional) > 10
+		if isAllNines {
+			for _, r := range trimmedFractional {
+				if r != '9' {
+					isAllNines = false
+					break
+				}
+			}
+		}
+
+		if isAllNines {
+			integer, _ := new(big.Int).SetString(parts[0], 10)
+			integer.Add(integer, big.NewInt(1))
+			return sign + integer.String()
+		}
+	}
+
+	s = strings.TrimRight(s, "0")
+	if !strings.Contains(s, ".") {
+		s = s + "."
+	}
+
 	parts := strings.Split(s, ".")
 	integerPart := parts[0]
 	fractionalPartStr := parts[1]
 
-	for start := 0; start < len(fractionalPartStr); start++ {
-		for length := 1; start+length*2 <= len(fractionalPartStr); length++ {
-			pattern := fractionalPartStr[start : start+length]
-			nextPart := fractionalPartStr[start+length : start+length*2]
+	if len(fractionalPartStr) == 0 {
+		if integerPart == "" {
+			return "0"
+		}
+		return sign + integerPart
+	}
 
-			if pattern == nextPart && pattern != strings.Repeat("0", length) {
+	for start := 0; start < len(fractionalPartStr); start++ {
+		for length := 1; start+length <= len(fractionalPartStr); length++ {
+			if start+length*2 > len(fractionalPartStr) {
+				continue
+			}
+
+			pattern := fractionalPartStr[start : start+length]
+			isRepeating := true
+			for i := start + length; i < len(fractionalPartStr); i++ {
+				if fractionalPartStr[i] != pattern[(i-start)%length] {
+					if i == len(fractionalPartStr)-1 && fractionalPartStr[i] == pattern[(i-start)%length]+1 {
+						// Rounding detected, ignore mismatch for last digit
+					} else {
+						isRepeating = false
+						break
+					}
+				}
+			}
+
+			if isRepeating {
+				if len(fractionalPartStr)-start < 6 {
+					continue
+				}
 				nonRepeatingPart := fractionalPartStr[:start]
 				repeatingStr := addOverline(pattern)
 				return fmt.Sprintf("%s%s.%s%s", sign, integerPart, nonRepeatingPart, repeatingStr)
@@ -97,7 +148,7 @@ func formatRecurring(n *big.Float, precision int) string {
 		result = strings.TrimRight(result, "0")
 		result = strings.TrimRight(result, ".")
 	}
-	return result
+	return sign + result
 }
 
 func addOverline(text string) string {
