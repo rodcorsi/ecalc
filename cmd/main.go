@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 	"strings"
 
@@ -55,14 +56,46 @@ func main() {
 }
 
 func prompt(result *ecalc.Result) string {
-	return fmt.Sprintf("(ans:%v) » ", formatValue(result))
+	return fmt.Sprintf("(ans:%v) » ", fmtPrompt.Sprintf("%-10s", formatValue(result.Value)))
 }
 
-func formatValue(result *ecalc.Result) string {
-	if result.EngNotation {
-		return fmtPrompt.Sprint(result.Value.Text('e', 14))
+func formatValue(value *big.Float) string {
+	const maxLen = 10
+
+	if value.IsInt() {
+		formattedInt := value.Text('f', 0)
+		if len(formattedInt) <= maxLen {
+			return fmt.Sprint(formattedInt)
+		}
 	}
-	return fmtPrompt.Sprint(result.Value.Text('f', 8))
+
+	var integerPart big.Int
+	value.Int(&integerPart)
+
+	integerPartLength := len(integerPart.String())
+	if integerPart.Sign() == 0 {
+		integerPartLength = 1
+	}
+
+	precision := maxLen - integerPartLength - 1
+	if precision < 0 {
+		precision = 0
+	}
+
+	formattedFloat := value.Text('f', precision)
+	if precision > 0 {
+		formattedFloat = strings.TrimRight(formattedFloat, "0")
+		formattedFloat = strings.TrimRight(formattedFloat, ".")
+	}
+
+	isTooLong := len(formattedFloat) > maxLen
+	isRoundedToZero := formattedFloat == "0" && value.Sign() != 0
+
+	if isTooLong || isRoundedToZero {
+		return fmt.Sprint(value.Text('e', 4))
+	}
+
+	return fmt.Sprint(formattedFloat)
 }
 
 func resultLine(result *ecalc.Result) string {
