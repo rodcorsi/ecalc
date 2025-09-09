@@ -25,19 +25,20 @@ Expressions example:
 CTRL+C:
     Copy result to clipboard
 Commands:
-    exit  terminate this
-    help  show this text
-    dms   print last result to Degree Minutes Seconds
-    clear clear all screen
-    cls   same as clear command
-    set   define variable with last value
-    cp    copy to clipboard
+    exit   terminate this
+    help   show this text
+    dms    print last result to Degree Minutes Seconds
+    clear  clear all screen
+    cls    same as clear command
+    set    define variable with last value
+    cp     copy to clipboard
+    update update ecalc to the latest version
 Operator:
     + - * / ^
 Functions:
     ln abs cos sin tan acos asin atan sqrt cbrt ceil floor
 Constants:
-    e pi phi sqrt2 sqrte sqrtpi sqrtphi ans
+    e pi phi sqrt2 sqrte sqrtpi sqrtphi ans in
 ANS:
     you can use an special variable 'ans' to use the last result on your expression
 `
@@ -76,12 +77,12 @@ func addCommands(shell *ishell.Shell, ecalc *ecalc.ECalc) {
 			if varName == "" {
 				varName = "x"
 			} else if !reValidSetName.MatchString(varName) {
-				c.Printf("Invalid variable name '%v'. Must be just letters\n", expr)
+				c.Printf("Invalid variable name '%v'. Must be just letters", expr)
 				return
 			}
 			value := ecalc.Result.Value
 			ecalc.AddConstant(varName, value)
-			c.Printf("%v => %v\n", varName, formatResult(ecalc.Result))
+			c.Printf("%v => %v", varName, formatResult(ecalc.Result))
 		},
 	})
 	shell.AddCmd(&ishell.Cmd{
@@ -90,10 +91,15 @@ func addCommands(shell *ishell.Shell, ecalc *ecalc.ECalc) {
 		Func: func(c *ishell.Context) {
 			value, err := copyToClipboard(c, ecalc)
 			if err != nil {
-				c.Println("\nCan't copy to clipboard! ")
+				c.Println("Can't copy to clipboard! ")
 				return
 			}
-			c.Printf("\n'%v' copied to clipboard!\n", value)
+			c.Printf("'%v' copied to clipboard!", value)
 		},
+	})
+	shell.AddCmd(&ishell.Cmd{
+		Name: "update",
+		Help: "Update ecalc to the latest version",
+		Func: update,
 	})
 }
