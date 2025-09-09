@@ -40,7 +40,7 @@ var consts = map[string]ConstFunction{
 	"e":       func() *big.Float { return big.NewFloat(math.E) },
 	"pi":      func() *big.Float { return big.NewFloat(math.Pi) },
 	"phi":     func() *big.Float { return big.NewFloat(math.Phi) },
-	"sqrt2":   func() *big.Float { return big.NewFloat(math.Sqrt2) },
+	"sqrtii":  func() *big.Float { return big.NewFloat(math.Sqrt2) },
 	"sqrte":   func() *big.Float { return big.NewFloat(math.SqrtE) },
 	"sqrtpi":  func() *big.Float { return big.NewFloat(math.SqrtPi) },
 	"sqrtphi": func() *big.Float { return big.NewFloat(math.SqrtPhi) },

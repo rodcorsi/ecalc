@@ -44,7 +44,7 @@ Copy result to clipboard
 
 ## Constants
 
-`e` `pi` `phi` `sqrt2` `sqrte` `sqrtpi` `sqrtphi` `ans`
+`e` `pi` `phi` `sqrtii` `sqrte` `sqrtpi` `sqrtphi` `ans`
 
 ## ANS
 

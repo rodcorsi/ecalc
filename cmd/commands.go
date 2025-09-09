@@ -38,7 +38,7 @@ Operator:
 Functions:
     ln abs cos sin tan acos asin atan sqrt cbrt ceil floor
 Constants:
-    e pi phi sqrt2 sqrte sqrtpi sqrtphi ans in
+    e pi phi sqrtii sqrte sqrtpi sqrtphi ans in
 ANS:
     you can use an special variable 'ans' to use the last result on your expression
 `
