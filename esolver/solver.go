@@ -44,7 +44,7 @@ var consts = map[string]ConstFunction{
 	"sqrte":   func() *big.Float { return big.NewFloat(math.SqrtE) },
 	"sqrtpi":  func() *big.Float { return big.NewFloat(math.SqrtPi) },
 	"sqrtphi": func() *big.Float { return big.NewFloat(math.SqrtPhi) },
-	"pol":     func() *big.Float { return big.NewFloat(25.4) },
+	"in":      func() *big.Float { return big.NewFloat(25.4) },
 }
 
 type ESolver interface {
